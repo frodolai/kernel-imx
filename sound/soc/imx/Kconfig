@@ -72,7 +72,10 @@ config SND_SOC_IMX_WM8958
 config SND_SOC_IMX_WM8962
 	tristate "SoC Audio support for IMX boards with WM8962"
 	select SND_MXC_SOC_MX2
-	select SND_SOC_WM8962
+	#-oliver select SND_SOC_WM8962
+  	#+{oliver
+  	select SND_SOC_WM8960
+  	#oliver}+
 	help
 	  Say Y if you want to add support for SoC audio on an i.MX board with
 	  a WM8962 codec.

@@ -42,6 +42,7 @@
 
 #include "imx-ssi.h"
 #include "../codecs/wm8962.h"
+#include "../codecs/wm8960.h" //+oliver
 
 struct imx_priv {
 	int sysclk;         /*mclk from the outside*/
@@ -133,6 +134,7 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		pr_err("Failed to start FLL: %d\n", ret);
 
+  	#if 0 //+oliver
 	ret = snd_soc_dai_set_sysclk(codec_dai,
 					 WM8962_SYSCLK_FLL,
 					 pll_out,
@@ -141,6 +143,7 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 		pr_err("Failed to set SYSCLK: %d\n", ret);
 		return ret;
 	}
+  	#endif  //+oliver
 
 	return 0;
 }
@@ -374,6 +377,61 @@ static int imx_wm8962_init(struct snd_soc_pcm_runtime *rtd)
 	return 0;
 }
 
+//+{oliver
+static int imx_wm8960_init(struct snd_soc_pcm_runtime *rtd)
+{
+	struct snd_soc_codec *codec = rtd->codec;
+	struct imx_priv *priv = &card_priv;
+	struct platform_device *pdev = priv->pdev;
+	struct mxc_audio_platform_data *plat = pdev->dev.platform_data;
+	int ret = 0;
+
+	gcodec = rtd->codec;
+
+	if (plat->hp_gpio != -1) {
+			priv->hp_irq = gpio_to_irq(plat->hp_gpio);
+
+			ret = request_irq(priv->hp_irq,
+						imx_headphone_detect_handler,
+						IRQ_TYPE_EDGE_BOTH, pdev->name, priv);
+
+			if (ret < 0) {
+				ret = -EINVAL;
+				return ret;
+			}
+
+			ret = driver_create_file(pdev->dev.driver,
+							&driver_attr_headphone);
+			if (ret < 0) {
+				ret = -EINVAL;
+				return ret;
+			}
+		}
+
+	if (plat->mic_gpio != -1) {
+		priv->amic_irq = gpio_to_irq(plat->mic_gpio);
+
+		ret = request_irq(priv->amic_irq,
+					imx_amic_detect_handler,
+					IRQ_TYPE_EDGE_BOTH, pdev->name, priv);
+
+		if (ret < 0) {
+			ret = -EINVAL;
+			return ret;
+		}
+
+		ret = driver_create_file(pdev->dev.driver, &driver_attr_amic);
+		if (ret < 0) {
+			ret = -EINVAL;
+			return ret;
+		}
+
+		priv->amic_status = gpio_get_value(plat->mic_gpio);
+	}
+	return 0;
+}
+//oliver}+
+
 static struct snd_soc_ops imx_hifi_ops = {
 	.startup = imx_hifi_startup,
 	.shutdown = imx_hifi_shutdown,
@@ -384,11 +442,14 @@ static struct snd_soc_dai_link imx_dai[] = {
 	{
 		.name = "HiFi",
 		.stream_name = "HiFi",
-		.codec_dai_name	= "wm8962",
-		.codec_name	= "wm8962.0-001a",
+		//-oliver .codec_dai_name	= "wm8962",
+		//-oliver .codec_name	= "wm8962.0-001a",
+		.codec_dai_name	= "wm8960-hifi",
+		.codec_name	= "wm8960-codec.0-001a",
 		.cpu_dai_name	= "imx-ssi.1",
 		.platform_name	= "imx-pcm-audio.1",
-		.init		= imx_wm8962_init,
+		//-oliver .init		= imx_wm8962_init,
+		.init		= imx_wm8960_init,
 		.ops		= &imx_hifi_ops,
 	},
 };

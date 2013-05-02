@@ -975,6 +975,39 @@ static int wm8960_probe(struct snd_soc_codec *codec)
 	reg = snd_soc_read(codec, WM8960_ROUT2);
 	snd_soc_write(codec, WM8960_ROUT2, reg | 0x100);
 
+  	//+{oliver
+  	#if 1
+ 	snd_soc_write(codec, WM8960_PLL1,
+		     snd_soc_read(codec, WM8960_PLL1) | 0x37);
+ 	snd_soc_write(codec, WM8960_PLL2, 0x31);
+ 	snd_soc_write(codec, WM8960_PLL3, 0x26);
+ 	snd_soc_write(codec, WM8960_PLL4, 0xe8);
+  
+ 	snd_soc_write(codec, WM8960_POWER2,
+		     snd_soc_read(codec, WM8960_POWER2) | 0x1);
+	msleep(250);
+	snd_soc_write(codec, WM8960_CLOCK1,
+		     snd_soc_read(codec, WM8960_CLOCK1) | 0x5);
+	#endif
+	snd_soc_write(codec, 0x1c, 0x094);
+	snd_soc_write(codec, 0x1d, 0x040);
+	msleep(400);
+	snd_soc_write(codec, 0x1a, 0x060);
+	snd_soc_write(codec, 0x1d, 0x000);
+	snd_soc_write(codec, 0x19, 0x080);
+	msleep(100);
+	snd_soc_write(codec, 0x19, 0x0c0);
+	snd_soc_write(codec, 0x1c, 0x000);
+	snd_soc_write(codec, 0x1a, 0x1e0);
+	snd_soc_write(codec, 0x2f, 0x00c);
+	snd_soc_write(codec, 0x22, 0x150);
+	snd_soc_write(codec, 0x25, 0x150);
+	snd_soc_write(codec, 0x02, 0x065);
+	snd_soc_write(codec, 0x03, 0x165);
+	snd_soc_write(codec, 0x06, 0x00c);
+	snd_soc_write(codec, 0x05, 0x000);
+  	//oliver}+
+
 	snd_soc_add_controls(codec, wm8960_snd_controls,
 				     ARRAY_SIZE(wm8960_snd_controls));
 	wm8960_add_widgets(codec);

@@ -159,7 +159,9 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
 /* Pause frame feild and FIFO threshold */
 #define FEC_ENET_FCE		(1 << 5)
 #define FEC_ENET_RSEM_V		0x84
+#define FEC_ENET_RSEM_V_TO1  0x10 //+oliver : fec: tune RSEM and RSFL values for tapeout 1.0
 #define FEC_ENET_RSFL_V		16
+#define FEC_ENET_RSFL_V_TO1  0x20 //+oliver : fec: tune RSEM and RSFL values for tapeout 1.0
 #define FEC_ENET_RAEM_V		0x8
 #define FEC_ENET_RAFL_V		0x8
 #define FEC_ENET_OPD_V		0xFFF0
@@ -562,6 +564,7 @@ static int fec_rx_poll(struct napi_struct *napi, int budget)
 			goto rx_processing_done;
 
 		/* Check for errors. */
+		#if 0   //+oliver: fec: fix rx error counts
 		if (status & (BD_ENET_RX_LG | BD_ENET_RX_SH | BD_ENET_RX_NO |
 			   BD_ENET_RX_CR | BD_ENET_RX_OV)) {
 			ndev->stats.rx_errors++;
@@ -584,6 +587,35 @@ static int fec_rx_poll(struct napi_struct *napi, int budget)
 		if (status & BD_ENET_RX_CL) {
 			ndev->stats.rx_errors++;
 			ndev->stats.rx_frame_errors++;
+		#endif  //+oliver
+		//+{oliver
+		status ^= BD_ENET_RX_LAST;  //+oliver : fec: fix rx error counts
+		if (status & (BD_ENET_RX_LG | BD_ENET_RX_SH | BD_ENET_RX_NO |
+			   BD_ENET_RX_CR | BD_ENET_RX_OV | BD_ENET_RX_LAST |
+			   BD_ENET_RX_CL)) {
+		  	ndev->stats.rx_errors++;
+      		if (status & BD_ENET_RX_OV) {
+        		/* FIFO overrun */
+        		ndev->stats.rx_fifo_errors++;
+      		} else {
+        		if (status & (BD_ENET_RX_LG | BD_ENET_RX_SH
+            		| BD_ENET_RX_LAST)) {
+          			/* Frame too long or too short. */
+          			ndev->stats.rx_length_errors++;
+          			if (status & BD_ENET_RX_LAST)
+            			dev_err(&ndev->dev,
+              			"rcv is not +last, "
+              			"0x%x\n", status);
+        	}
+        	if (status & BD_ENET_RX_CR)  /* CRC Error */
+          		ndev->stats.rx_crc_errors++;
+        		/*
+         		* Report late collisions as a frame error.
+         		*/
+        		if (status & (BD_ENET_RX_NO | BD_ENET_RX_CL))
+          			ndev->stats.rx_frame_errors++;
+      	}
+      	//oliver}+
 			goto rx_processing_done;
 		}
 
@@ -1040,9 +1072,17 @@ static int fec_enet_mii_probe(struct net_device *ndev)
 	}
 
 	/* mask with MAC supported features */
+	#if 0   //+oliver: fec: enable tx/rx of pause frames for mx6q
 	if (cpu_is_mx6q() || cpu_is_mx6dl())
 		phy_dev->supported &= PHY_GBIT_FEATURES;
 	else
+	#endif  //+oliver
+	//+{oliver fec: enable tx/rx of pause frames for mx6q
+	if (cpu_is_mx6q() || cpu_is_mx6dl()) {
+	  /* SUPPORTED_Asym_Pause prevents my switch from linking up */
+	  phy_dev->supported &= PHY_GBIT_FEATURES | SUPPORTED_Pause;
+	} else
+	//oliver}+
 		phy_dev->supported &= PHY_BASIC_FEATURES;
 
 	phy_dev->advertising = phy_dev->supported;
@@ -1613,6 +1653,12 @@ fec_restart(struct net_device *dev, int duplex)
 		writel(OPT_FRAME_SIZE | 0x06, fep->hwp + FEC_R_CNTRL);
 		writel(0x0, fep->hwp + FEC_X_CNTRL);
 	}
+	//+{oliver
+	/* fec: stop the "rcv is not +last, " error messages */
+	#ifdef FEC_FTRL
+  	writel(PKT_MAXBUF_SIZE, fep->hwp + FEC_FTRL);
+  	#endif
+  	//oliver}+
 	fep->full_duplex = duplex;
 
 	/* Set MII speed */
@@ -1643,10 +1689,16 @@ fec_restart(struct net_device *dev, int duplex)
 		 * ENET pause frame has two issues as ticket TKT116501
 		 * The issues have been fixed on Rigel TO1.1 and Arik TO1.2
 		 */
+		#if 0   //+oliver
 		if ((cpu_is_mx6q() &&
 			(mx6q_revision() >= IMX_CHIP_REVISION_1_2)) ||
 			(cpu_is_mx6dl() &&
 			(mx6dl_revision() >= IMX_CHIP_REVISION_1_1)))
+		#endif  //+oliver
+		//+{oliver : fec: enable tx/rx of pause frames for mx6q
+		if (cpu_is_mx6q() || (cpu_is_mx6dl()
+		  	&& (mx6dl_revision() >= IMX_CHIP_REVISION_1_1)))
+		//oliver}+
 			val |= FEC_ENET_FCE;
 
 		writel(val, fep->hwp + FEC_R_CNTRL);
@@ -1702,6 +1754,7 @@ fec_restart(struct net_device *dev, int duplex)
 		fep->phy_dev->speed == SPEED_1000)
 		val |= (0x1 << 5);
 
+  	#if 0   //+oliver
 	/* RX FIFO threshold setting for ENET pause frame feature
 	 * Only set the parameters after ticket TKT116501 fixed.
 	 * The issue has been fixed on Rigel TO1.1 and Arik TO1.2
@@ -1711,15 +1764,39 @@ fec_restart(struct net_device *dev, int duplex)
 		(cpu_is_mx6dl() &&
 		(mx6dl_revision() >= IMX_CHIP_REVISION_1_1))) {
 		writel(FEC_ENET_RSEM_V, fep->hwp + FEC_R_FIFO_RSEM);
+	#endif  //+oliver
+	//+{oliver: fec: enable tx/rx of pause frames for mx6q
+	if (cpu_is_mx6q() || cpu_is_mx6dl()) {
+	  u32 rsem_val = 0;
+	  /* RX FIFO threshold setting for ENET pause frame feature
+	   * Only set the parameters after ticket TKT116501 fixed.
+	   * The issue has been fixed on Rigel TO1.1 and Arik TO1.2
+	   */
+	  if (cpu_is_mx6q() || (cpu_is_mx6dl()
+	    //+{oliver : fec: tune RSEM and RSFL values for tapeout 1.0
+	    && (mx6dl_revision() >= IMX_CHIP_REVISION_1_1))) {
+	    if (cpu_is_mx6q() && (mx6q_revision() < IMX_CHIP_REVISION_1_1)) {
+	      rsem_val = FEC_ENET_RSEM_V_TO1;
+	    } else
+	      rsem_val = FEC_ENET_RSEM_V;
+	    }
+	    //oliver}+
+	  writel(rsem_val, fep->hwp + FEC_R_FIFO_RSEM);
+	  if (cpu_is_mx6q() && (mx6q_revision() < IMX_CHIP_REVISION_1_1))
+	    writel(FEC_ENET_RSFL_V_TO1, fep->hwp + FEC_R_FIFO_RSFL);
+	  else
+	//oliver}+
 		writel(FEC_ENET_RSFL_V, fep->hwp + FEC_R_FIFO_RSFL);
 		writel(FEC_ENET_RAEM_V, fep->hwp + FEC_R_FIFO_RAEM);
 		writel(FEC_ENET_RAFL_V, fep->hwp + FEC_R_FIFO_RAFL);
 
 		/* OPD */
 		writel(FEC_ENET_OPD_V, fep->hwp + FEC_OPD);
+	#if 0   //+oliver
 	}
 
 	if (cpu_is_mx6q() || cpu_is_mx6dl()) {
+	#endif  //+oliver
 		/* enable endian swap */
 		val |= (0x1 << 8);
 		/* enable ENET store and forward mode */

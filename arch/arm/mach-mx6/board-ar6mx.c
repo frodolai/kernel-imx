@@ -155,6 +155,15 @@
 
 #define SABRESD_RTC_INT	            IMX_GPIO_NR(1, 8)
 //oliver}+
+#define AR6MX_ANDROID_POWER	      IMX_GPIO_NR(2, 0)
+#define AR6MX_TTL_DI0	            IMX_GPIO_NR(2, 0)
+#define AR6MX_TTL_DI1	            IMX_GPIO_NR(2, 1)
+#define AR6MX_TTL_DI2	            IMX_GPIO_NR(2, 2)
+#define AR6MX_TTL_DI3	            IMX_GPIO_NR(2, 3)
+#define AR6MX_TTL_DI4	            IMX_GPIO_NR(2, 4)
+#define AR6MX_TTL_DI5             IMX_GPIO_NR(2, 5)
+#define AR6MX_TTL_DO0	            IMX_GPIO_NR(2, 6)
+#define AR6MX_TTL_DO1             IMX_GPIO_NR(2, 7)
 
 extern char *gp_reg_id;
 extern char *soc_reg_id;
@@ -208,7 +217,7 @@ enum sd_pad_mode {
 	SD_PAD_MODE_HIGH_SPEED,
 };
 
-#if 0 //+oliver
+
 #if defined(CONFIG_KEYBOARD_GPIO) || defined(CONFIG_KEYBOARD_GPIO_MODULE)
 #define GPIO_BUTTON(gpio_num, ev_code, act_low, descr, wake)	\
 {								\
@@ -221,11 +230,7 @@ enum sd_pad_mode {
 }
 
 static struct gpio_keys_button ard_buttons[] = {
-	GPIO_BUTTON(SABREAUTO_ANDROID_HOME,    KEY_HOME,       1, "home",        0),
-	GPIO_BUTTON(SABREAUTO_ANDROID_BACK,    KEY_BACK,       1, "back",        0),
-	GPIO_BUTTON(SABREAUTO_ANDROID_MENU,    KEY_MENU,       1, "menu",        0),
-	GPIO_BUTTON(SABREAUTO_ANDROID_VOLUP,   KEY_VOLUMEUP,   1, "volume-up",   0),
-	GPIO_BUTTON(SABREAUTO_ANDROID_VOLDOWN, KEY_VOLUMEDOWN, 1, "volume-down", 0),
+	GPIO_BUTTON(AR6MX_ANDROID_POWER,    KEY_POWER,       1, "power",        1),
 };
 
 static struct gpio_keys_platform_data ard_android_button_data = {
@@ -249,7 +254,7 @@ static void __init imx6q_add_android_device_buttons(void)
 #else
 static void __init imx6q_add_android_device_buttons(void) {}
 #endif
-#endif //+oliver
+
 
 static int plt_sd_pad_change(unsigned int index, int clock)
 {
@@ -1253,11 +1258,17 @@ static struct mipi_csi2_platform_data mipi_csi2_pdata = {
 static void sabreauto_suspend_enter(void)
 {
 	/* suspend preparation */
+	printk("suspend_enter\n");
+	gpio_set_value(AR6MX_TTL_DO0, 0);
+	gpio_set_value(AR6MX_TTL_DO1, 0);
 }
 
 static void sabreauto_suspend_exit(void)
 {
 	/* resmue resore */
+	printk("suspend_exit\n");
+	gpio_set_value(AR6MX_TTL_DO0, 1);
+	gpio_set_value(AR6MX_TTL_DO1, 1);
 }
 static const struct pm_platform_data mx6q_sabreauto_pm_data __initconst = {
 	.name		= "imx_pm",
@@ -1616,6 +1627,35 @@ static void pcie_3v3_reset(void)
 }
 //frank-debug(2012-11-28) -end
 
+static __init void ar6mx_init_external_gpios(void) {
+/*
+	gpio_request(AR6MX_TTL_DI0, "ttl_di0");
+	gpio_direction_input(AR6MX_TTL_DI0);
+	gpio_export(AR6MX_TTL_DI0, true);
+	gpio_request(AR6MX_TTL_DI1, "ttl_di1");
+	gpio_direction_input(AR6MX_TTL_DI1);
+	gpio_export(AR6MX_TTL_DI1, true);
+	gpio_request(AR6MX_TTL_DI2, "ttl_di2");
+	gpio_direction_input(AR6MX_TTL_DI2);
+	gpio_export(AR6MX_TTL_DI2, true);
+	gpio_request(AR6MX_TTL_DI3, "ttl_di3");
+	gpio_direction_input(AR6MX_TTL_DI3);
+	gpio_export(AR6MX_TTL_DI3, true);
+	gpio_request(AR6MX_TTL_DI4, "ttl_di4");
+	gpio_direction_input(AR6MX_TTL_DI4);
+	gpio_export(AR6MX_TTL_DI4, true);
+	gpio_request(AR6MX_TTL_DI5, "ttl_di5");
+	gpio_direction_input(AR6MX_TTL_DI5);
+	gpio_export(AR6MX_TTL_DI5, true);
+*/
+	gpio_request(AR6MX_TTL_DO0, "ttl_do0");
+	gpio_direction_output(AR6MX_TTL_DO0, 1);
+	gpio_export(AR6MX_TTL_DO0, true);
+	gpio_request(AR6MX_TTL_DO1, "ttl_do1");
+	gpio_direction_output(AR6MX_TTL_DO1, 1);
+	gpio_export(AR6MX_TTL_DO1, true);
+}
+
 /*!
  * Board specific initialization.
  */
@@ -1819,7 +1859,8 @@ static void __init mx6_board_init(void)
 	imx6q_add_v4l2_output(0);
 	imx6q_add_v4l2_capture(0, &capture_data[0]);
 	imx6q_add_v4l2_capture(1, &capture_data[1]);
-	//-oliver imx6q_add_android_device_buttons();
+	ar6mx_init_external_gpios();
+	imx6q_add_android_device_buttons();
 
 	if (!board_is_mx6_reva()) {
 		imx6q_add_imx_snvs_rtc();

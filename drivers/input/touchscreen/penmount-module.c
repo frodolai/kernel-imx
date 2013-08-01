@@ -443,6 +443,10 @@ int pmDriver_InputDevInit(struct strPENMOUNT *pPenMount,
 	pInputDev->open = pmDriver_InputDevOpen;
 	pInputDev->close = pmDriver_InputDevClose;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 38)
+	set_bit(INPUT_PROP_DIRECT, pInputDev->propbit);
+#endif
+
 	// Set up "dev" field
 	pInputDev->dev.parent = pParentDev;
 

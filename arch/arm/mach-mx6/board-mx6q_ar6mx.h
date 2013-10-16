@@ -184,6 +184,9 @@ static iomux_v3_cfg_t mx6q_sabreauto_pads[] = {
 	MX6Q_PAD_KEY_ROW1__UART5_RXD,
 	MX6Q_PAD_KEY_COL1__UART5_TXD,
 
+	/* USB OTG ID */
+	MX6Q_PAD_GPIO_1__USBOTG_ID,
+
 	#if 1	//+oliver
 	/* USDHC 3 */
 	MX6Q_PAD_SD3_CLK__USDHC3_CLK_50MHZ,

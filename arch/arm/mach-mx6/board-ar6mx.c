@@ -164,6 +164,7 @@
 #define AR6MX_TTL_DI5             IMX_GPIO_NR(2, 5)
 #define AR6MX_TTL_DO0	            IMX_GPIO_NR(2, 6)
 #define AR6MX_TTL_DO1             IMX_GPIO_NR(2, 7)
+#define AR6MX_OTG_PWR_EN			IMX_GPIO_NR(1, 7)
 
 extern char *gp_reg_id;
 extern char *soc_reg_id;
@@ -902,14 +903,17 @@ static struct mxc_audio_platform_data si4763_audio_data = {
 	.src_port = 2,
 	.ext_port = 5,
 };
-static void imx6q_sabreauto_usbotg_vbus(bool on)
+#endif
+
+static void imx6q_ar6mx_usbotg_vbus(bool on)
 {
 	if (on)
-		gpio_set_value_cansleep(SABREAUTO_USB_OTG_PWR, 1);
+		gpio_set_value(AR6MX_OTG_PWR_EN, 1);
 	else
-		gpio_set_value_cansleep(SABREAUTO_USB_OTG_PWR, 0);
+		gpio_set_value(AR6MX_OTG_PWR_EN, 0);
 }
 
+#if 0   //+oliver
 static void imx6q_sabreauto_usbhost1_vbus(bool on)
 {
 	if (on)
@@ -950,6 +954,16 @@ static void __init imx6q_sabreauto_init_usb(void)
 	mx6_usb_h2_init();
 	mx6_usb_h3_init();
 #endif
+	ret = gpio_request(AR6MX_OTG_PWR_EN, "usb-pwr");
+	if (ret) {
+		pr_err("failed to get GPIO MX6Q_SABRELITE_USB_OTG_PWR: %d\n",
+			ret);
+		return;
+	}
+	gpio_direction_output(AR6MX_OTG_PWR_EN, 0);
+	mxc_iomux_set_gpr_register(1, 13, 1, 1);
+
+	mx6_set_otghost_vbus_func(imx6q_ar6mx_usbotg_vbus);
   	//+{oliver
 	mx6_usb_dr_init();
 	gpio_request(SABRESD_USB_V1_PWR, "usb_v1");

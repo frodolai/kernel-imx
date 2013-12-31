@@ -278,8 +278,8 @@ SND_SOC_DAPM_MIXER("Left Input Mixer", WM8960_POWER3, 5, 0,
 SND_SOC_DAPM_MIXER("Right Input Mixer", WM8960_POWER3, 4, 0,
 		   wm8960_rin, ARRAY_SIZE(wm8960_rin)),
 
-SND_SOC_DAPM_ADC("Left ADC", "Capture", WM8960_POWER2, 3, 0),
-SND_SOC_DAPM_ADC("Right ADC", "Capture", WM8960_POWER2, 2, 0),
+SND_SOC_DAPM_ADC("Left ADC", "Capture", WM8960_POWER1, 3, 0),
+SND_SOC_DAPM_ADC("Right ADC", "Capture", WM8960_POWER1, 2, 0),
 
 SND_SOC_DAPM_DAC("Left DAC", "Playback", WM8960_POWER2, 8, 0),
 SND_SOC_DAPM_DAC("Right DAC", "Playback", WM8960_POWER2, 7, 0),
@@ -427,7 +427,7 @@ static int wm8960_add_widgets(struct snd_soc_codec *codec)
 		if (strcmp(w->name, "OUT3 VMID") == 0)
 			wm8960->out3 = w;
 	}
-	
+
 	return 0;
 }
 
@@ -974,6 +974,23 @@ static int wm8960_probe(struct snd_soc_codec *codec)
 	snd_soc_write(codec, WM8960_LOUT2, reg | 0x100);
 	reg = snd_soc_read(codec, WM8960_ROUT2);
 	snd_soc_write(codec, WM8960_ROUT2, reg | 0x100);
+
+	snd_soc_write(codec, WM8960_PLL1,
+	snd_soc_read(codec, WM8960_PLL1) | 0x37);
+	snd_soc_write(codec, WM8960_PLL2, 0x31);
+	snd_soc_write(codec, WM8960_PLL3, 0x26);
+	snd_soc_write(codec, WM8960_PLL4, 0xe8);
+	snd_soc_write(codec, WM8960_POWER2,
+	snd_soc_read(codec, WM8960_POWER2) | 0x1);
+	msleep(250);
+	snd_soc_write(codec, WM8960_CLOCK1,
+	snd_soc_read(codec, WM8960_CLOCK1) | 0x5);
+
+	/* Since AR6MX uses 4 wire AUDMUX, ADCLRC will be disabled. */
+	reg = snd_soc_read(codec, WM8960_IFACE2);
+	snd_soc_write(codec, WM8960_IFACE2, reg | 0x040);
+	reg = snd_soc_read(codec, WM8960_ADDCTL2);
+	snd_soc_write(codec, WM8960_ADDCTL2, reg | 0x4);
 
 	snd_soc_add_controls(codec, wm8960_snd_controls,
 				     ARRAY_SIZE(wm8960_snd_controls));

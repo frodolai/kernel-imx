@@ -104,6 +104,7 @@ extern char *pu_reg_id;
 
 static struct clk *sata_clk;
 static int spinor_en;
+static int emmc_en = 0;
 
 static int __init spinor_enable(char *p)
 {
@@ -111,6 +112,13 @@ static int __init spinor_enable(char *p)
 		return 0;
 }
 early_param("spi-nor", spinor_enable);
+
+static int __init emmc_enable(char *p)
+{
+       emmc_en = 1;
+       return 0;
+}
+early_param("emmc_en", emmc_enable);
 
 enum sd_pad_mode {
 	SD_PAD_MODE_LOW_SPEED,
@@ -871,8 +879,9 @@ static void __init mx6_board_init(void)
 
 	imx6q_add_pm_imx(0, &mx6q_ar6mx_pm_data);
 
+	if(emmc_en)
+		imx6q_add_sdhci_usdhc_imx(3, &mx6q_ar6mx_sd4_data);
 	imx6q_add_sdhci_usdhc_imx(2, &mx6q_ar6mx_sd3_data);
-	imx6q_add_sdhci_usdhc_imx(3, &mx6q_ar6mx_sd4_data);
 
 	imx_add_viv_gpu(&imx6_gpu_data, &imx6q_gpu_pdata);
 	imx6q_ar6mx_init_usb();

@@ -259,3 +259,7 @@ static iomux_v3_cfg_t mx6dl_ar6mx_i2c2_pads[] = {
 	MX6Q_PAD_KEY_ROW3__I2C2_SDA,	/* I2C2 SDA */
 };
 
+static iomux_v3_cfg_t mx6dl_ar6mx_uart2_rev03_pads[] = {
+	MX6DL_PAD_EIM_D26__UART2_RXD,
+	MX6DL_PAD_EIM_D27__UART2_TXD,
+};

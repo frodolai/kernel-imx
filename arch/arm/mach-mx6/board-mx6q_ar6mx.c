@@ -97,6 +97,10 @@
 #define AR6MX_MIC_DET	      IMX_GPIO_NR(1, 9)
 #define AR6MX_PCIE_RST_B	  IMX_GPIO_NR(7, 12)
 #define AR6MX_RTC_INT       IMX_GPIO_NR(1, 8)
+#define AR6MX_VER_B0			IMX_GPIO_NR(4, 25)
+#define AR6MX_VER_B1			IMX_GPIO_NR(4, 26)
+#define AR6MX_VER_B2			IMX_GPIO_NR(4, 27)
+#define AR6MX_VER_B3			IMX_GPIO_NR(4, 28)
 
 extern char *gp_reg_id;
 extern char *soc_reg_id;
@@ -104,7 +108,8 @@ extern char *pu_reg_id;
 
 static struct clk *sata_clk;
 static int spinor_en;
-static int emmc_en = 0;
+static int board_id;
+static int emmc_en;
 
 static int __init spinor_enable(char *p)
 {
@@ -206,10 +211,32 @@ mx6q_ar6mx_anatop_thermal_data __initconst = {
 	.name = "anatop_thermal",
 };
 
+static const struct imxuart_platform_data ar6mx_uart1_data = {
+	.flags = IMXUART_SDMA,
+	.dma_req_tx = MX6Q_DMA_REQ_UART2_TX,
+	.dma_req_rx = MX6Q_DMA_REQ_UART2_RX,
+};
+
+static const struct imxuart_platform_data ar6mx_uart1_rev03_data = {
+	.flags = IMXUART_USE_DCEDTE | IMXUART_SDMA,
+	.dma_req_tx = MX6Q_DMA_REQ_UART2_TX,
+	.dma_req_rx = MX6Q_DMA_REQ_UART2_RX,
+};
+
 static inline void mx6q_ar6mx_init_uart(void)
 {
 	imx6q_add_imx_uart(0, NULL);
-	imx6q_add_imx_uart(1, NULL);
+	if (0xF == board_id) {
+		if (cpu_is_mx6q())
+			mxc_iomux_v3_setup_multiple_pads(mx6q_ar6mx_uart2_rev03_pads, \
+				ARRAY_SIZE(mx6q_ar6mx_uart2_rev03_pads));
+		else
+			mxc_iomux_v3_setup_multiple_pads(mx6dl_ar6mx_uart2_rev03_pads, \
+				ARRAY_SIZE(mx6dl_ar6mx_uart2_rev03_pads));
+
+		imx6q_add_imx_uart(1, &ar6mx_uart1_rev03_data);
+	} else
+		imx6q_add_imx_uart(1, &ar6mx_uart1_data);
 	imx6q_add_imx_uart(2, NULL);
 	imx6q_add_imx_uart(3, NULL);
 }
@@ -599,6 +626,13 @@ static struct imx_ipuv3_platform_data ipu_data[] = {
 	},
 };
 
+static struct gpio mx6q_ar6mx_ver_gpios[] = {
+	{ AR6MX_VER_B0, GPIOF_DIR_IN, "ver-b0" },
+	{ AR6MX_VER_B1, GPIOF_DIR_IN, "ver-b1" },
+	{ AR6MX_VER_B2, GPIOF_DIR_IN, "ver-b2" },
+	{ AR6MX_VER_B3, GPIOF_DIR_IN, "ver-b3" },
+};
+
 static void ar6mx_suspend_enter(void)
 {
 	/* suspend preparation */
@@ -791,6 +825,20 @@ static void pcie_3v3_reset(void)
 	gpio_free(AR6MX_PCIE_RST_B);
 }
 
+static void board_rev(void)
+{
+	int ret;
+
+	ret = gpio_request_array(mx6q_ar6mx_ver_gpios,
+		ARRAY_SIZE(mx6q_ar6mx_ver_gpios));
+	if (ret)
+		pr_err("failed to request ver gpios: %d\n", ret);
+	else
+		board_id = gpio_get_value(AR6MX_VER_B3) << 3 | \
+		gpio_get_value(AR6MX_VER_B2) << 2 | \
+		gpio_get_value(AR6MX_VER_B1) << 1 |	gpio_get_value(AR6MX_VER_B0);
+}
+
 /*!
  * Board specific initialization.
  */
@@ -832,6 +880,7 @@ static void __init mx6_board_init(void)
 	gp_reg_id = ar6mx_dvfscore_data.reg_id;
 	soc_reg_id = ar6mx_dvfscore_data.soc_id;
 	pu_reg_id = ar6mx_dvfscore_data.pu_id;
+	board_rev();
 	mx6q_ar6mx_init_uart();
 	imx6q_add_mxc_hdmi_core(&hdmi_core_data);
 
@@ -879,7 +928,7 @@ static void __init mx6_board_init(void)
 
 	imx6q_add_pm_imx(0, &mx6q_ar6mx_pm_data);
 
-	if(emmc_en)
+	if (emmc_en)
 		imx6q_add_sdhci_usdhc_imx(3, &mx6q_ar6mx_sd4_data);
 	imx6q_add_sdhci_usdhc_imx(2, &mx6q_ar6mx_sd3_data);
 

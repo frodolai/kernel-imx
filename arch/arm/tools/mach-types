@@ -1120,4 +1120,5 @@ mx6q_arm2		MACH_MX6Q_ARM2		MX6Q_ARM2		3837
 mx6sl_arm2		MACH_MX6SL_ARM2		MX6SL_ARM2		4091
 mx6q_hdmidongle		MACH_MX6Q_HDMIDONGLE    MX6Q_HDMIDONGLE		4284
 mx6sl_evk		MACH_MX6SL_EVK		MX6SL_EVK		4307
-
+ar6mxq                  MACH_AR6MXQ             AR6MXQ                  4517
+ar6mxs                  MACH_AR6MXS             AR6MXS                  4518

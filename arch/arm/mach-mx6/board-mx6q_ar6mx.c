@@ -709,7 +709,7 @@ static int mxc_wm8960_init(void)
 	rate = clk_round_rate(clko, 24000000);
 
 	clk_set_rate(clko, rate);
-	wm8960_data.sysclk = 11289600;
+	wm8960_data.sysclk = rate;
 	clk_enable(clko);
 }
 

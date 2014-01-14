@@ -114,8 +114,8 @@ static int emmc_en;
 
 static int __init spinor_enable(char *p)
 {
-       spinor_en = 1;
-       return 0;
+		spinor_en = 1;
+		return 0;
 }
 early_param("spi-nor", spinor_enable);
 
@@ -686,7 +686,7 @@ static struct platform_device ar6mx_vmmc_reg_devices = {
 };
 
 static struct platform_device mx6_sabresd_audio_wm8960_device = {
-	.name = "imx-wm8962",
+	.name = "imx-wm8960",
 };
 
 static struct mxc_audio_platform_data wm8960_data;
@@ -721,7 +721,7 @@ static int mxc_wm8960_init(void)
 	rate = clk_round_rate(clko, 24000000);
 
 	clk_set_rate(clko, rate);
-	wm8960_data.sysclk = 11289600;
+	wm8960_data.sysclk = rate;
 	clk_enable(clko);
 }
 

@@ -101,6 +101,7 @@
 #define AR6MX_VER_B1			IMX_GPIO_NR(4, 26)
 #define AR6MX_VER_B2			IMX_GPIO_NR(4, 27)
 #define AR6MX_VER_B3			IMX_GPIO_NR(4, 28)
+#define AR6MX_OTG_PWR_EN		IMX_GPIO_NR(1, 7)
 
 extern char *gp_reg_id;
 extern char *soc_reg_id;
@@ -424,10 +425,30 @@ static struct imx_ssi_platform_data mx6_ar6mx_ssi1_pdata = {
 	.flags = IMX_SSI_DMA | IMX_SSI_SYN,
 };
 
+static void imx6q_ar6mx_usbotg_vbus(bool on)
+{
+	if (on)
+		gpio_set_value(AR6MX_OTG_PWR_EN, 1);
+	else
+		gpio_set_value(AR6MX_OTG_PWR_EN, 0);
+}
+
 static void __init imx6q_ar6mx_init_usb(void)
 {
 	int ret = 0;
 	imx_otg_base = MX6_IO_ADDRESS(MX6Q_USB_OTG_BASE_ADDR);
+
+	ret = gpio_request(AR6MX_OTG_PWR_EN, "usb-pwr");
+
+	if (ret) {
+		pr_err("failed to get GPIO AR6MX_OTG_PWR_EN: %d\n",
+			ret);
+		return;
+	}
+
+	gpio_direction_output(AR6MX_OTG_PWR_EN, 0);
+	mxc_iomux_set_gpr_register(1, 13, 1, 1);
+	mx6_set_otghost_vbus_func(imx6q_ar6mx_usbotg_vbus);
 
 	gpio_request(AR6MX_USB_V1_PWR, "usb_v1");
 	gpio_direction_output(AR6MX_USB_V1_PWR, 1);

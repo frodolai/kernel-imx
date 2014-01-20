@@ -56,6 +56,7 @@ static iomux_v3_cfg_t mx6q_ar6mx_pads[] = {
 	MX6Q_PAD_RGMII_RX_CTL__ENET_RGMII_RX_CTL,
 
 	/* GPIO1 */
+	MX6Q_PAD_GPIO_1__USBOTG_ID,		/* OTG_ID */
 	MX6Q_PAD_GPIO_2__GPIO_1_2,        /* SW_RST     */
 	MX6Q_PAD_GPIO_4__GPIO_1_4,        /* STATUS_LED */
 	MX6Q_PAD_GPIO_5__GPIO_1_5,        /* SATA_LED   */

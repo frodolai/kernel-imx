@@ -47,9 +47,12 @@ static iomux_v3_cfg_t mx6q_sabreauto_pads[] = {
 	MX6Q_PAD_RGMII_RX_CTL__ENET_RGMII_RX_CTL,
 
 	/* GPIO1 */
+	MX6Q_PAD_GPIO_1__USBOTG_ID,		/* OTG_ID */
 	MX6Q_PAD_GPIO_2__GPIO_1_2,        /* SW_RST     */
 	MX6Q_PAD_GPIO_4__GPIO_1_4,        /* STATUS_LED */
 	MX6Q_PAD_GPIO_5__GPIO_1_5,        /* SATA_LED   */
+	MX6Q_PAD_GPIO_7__GPIO_1_7,        /* OTG_PW_EN  */
+	MX6Q_PAD_GPIO_8__GPIO_1_8,        /* RTC_INT    */
 	MX6Q_PAD_GPIO_9__GPIO_1_9,        /* MIC_DET    */
 	MX6Q_PAD_SD2_CLK__GPIO_1_10,      /* L1_PWREN   */
 	MX6Q_PAD_SD2_CMD__GPIO_1_11,      /* L0_PWREN   */
@@ -72,6 +75,10 @@ static iomux_v3_cfg_t mx6q_sabreauto_pads[] = {
 	MX6Q_PAD_NANDF_D7__GPIO_2_7,
 
 	/* GPIO4 */
+	MX6Q_PAD_DISP0_DAT4__GPIO_4_25,
+	MX6Q_PAD_DISP0_DAT5__GPIO_4_26,
+	MX6Q_PAD_DISP0_DAT6__GPIO_4_27,
+	MX6Q_PAD_DISP0_DAT7__GPIO_4_28,
 
 	/* GPIO5 */
 	MX6Q_PAD_DISP0_DAT13__GPIO_5_7,   /* USB1_OC    */
@@ -155,25 +162,11 @@ static iomux_v3_cfg_t mx6q_sabreauto_pads[] = {
 	MX6Q_PAD_SD3_DAT7__UART1_TXD,
 
 	/* UART 2 */
-	//+oliver
-	#if 1
 	MX6Q_PAD_EIM_D28__UART2_CTS,
 	MX6Q_PAD_EIM_D29__UART2_RTS,
-	#else
-	MX6Q_PAD_EIM_D28__UART2_RTS,
-	MX6Q_PAD_EIM_D29__UART2_CTS,
-	#endif
-	//oliver}+
 
-	//+{oliver
-	#if 1
 	MX6Q_PAD_EIM_D27__UART2_RXD,
 	MX6Q_PAD_EIM_D26__UART2_TXD,
-	#else
-	MX6Q_PAD_EIM_D27__UART2_TXD,
-	MX6Q_PAD_EIM_D26__UART2_RXD,
-	#endif
-	//oliver}+
 
 	/* UART 4 */
 	MX6Q_PAD_KEY_ROW0__UART4_RXD,
@@ -183,9 +176,6 @@ static iomux_v3_cfg_t mx6q_sabreauto_pads[] = {
 	MX6Q_PAD_KEY_COL4__UART5_RTS,
 	MX6Q_PAD_KEY_ROW1__UART5_RXD,
 	MX6Q_PAD_KEY_COL1__UART5_TXD,
-
-	/* USB OTG ID */
-	MX6Q_PAD_GPIO_1__USBOTG_ID,
 
 	#if 1	//+oliver
 	/* USDHC 3 */
@@ -236,4 +226,9 @@ static iomux_v3_cfg_t mx6q_sabreauto_hdmi_ddc_pads[] = {
 static iomux_v3_cfg_t mx6q_sabreauto_i2c2_pads[] = {
 	MX6Q_PAD_EIM_EB2__I2C2_SCL,     /* I2C2 SCL */
 	MX6Q_PAD_KEY_ROW3__I2C2_SDA,    /* I2C2 SDA */
+};
+
+static iomux_v3_cfg_t mx6q_ar6mx_uart2_rev03_pads[] = {
+	MX6Q_PAD_EIM_D26__UART2_RXD,
+	MX6Q_PAD_EIM_D27__UART2_TXD,
 };

@@ -165,6 +165,10 @@
 #define AR6MX_TTL_DO0	            IMX_GPIO_NR(2, 6)
 #define AR6MX_TTL_DO1             IMX_GPIO_NR(2, 7)
 #define AR6MX_OTG_PWR_EN			IMX_GPIO_NR(1, 7)
+#define AR6MX_VER_B0			IMX_GPIO_NR(4, 25)
+#define AR6MX_VER_B1			IMX_GPIO_NR(4, 26)
+#define AR6MX_VER_B2			IMX_GPIO_NR(4, 27)
+#define AR6MX_VER_B3			IMX_GPIO_NR(4, 28)
 
 extern char *gp_reg_id;
 extern char *soc_reg_id;
@@ -178,7 +182,8 @@ static int can0_enable;
 static int uart3_en;
 static int tuner_en;
 static int spinor_en;
-static int weimnor_en;
+static int board_id;
+static int emmc_en;
 
 static int __init spinor_enable(char *p)
 {
@@ -187,30 +192,12 @@ static int __init spinor_enable(char *p)
 }
 early_param("spi-nor", spinor_enable);
 
-#if 0 //+oliver
-static int __init weimnor_enable(char *p)
+static int __init emmc_enable(char *p)
 {
-       weimnor_en = 1;
+       emmc_en = 1;
        return 0;
 }
-early_param("weim-nor", weimnor_enable);
-#endif  //+oliver
-
-static int __init uart3_enable(char *p)
-{
-	uart3_en = 1;
-	return 0;
-}
-early_param("uart3", uart3_enable);
-
-#if 0 //+oliver
-static int __init tuner_enable(char *p)
-{
-	tuner_en = 1;
-	return 0;
-}
-early_param("tuner", tuner_enable);
-#endif //+oliver
+early_param("emmc_en", emmc_enable);
 
 enum sd_pad_mode {
 	SD_PAD_MODE_LOW_SPEED,
@@ -414,10 +401,33 @@ mx6q_sabreauto_anatop_thermal_data __initconst = {
 	.name = "anatop_thermal",
 };
 
+static const struct imxuart_platform_data ar6mx_uart1_data = {
+	.flags = IMXUART_SDMA,
+	.dma_req_tx = MX6Q_DMA_REQ_UART2_TX,
+	.dma_req_rx = MX6Q_DMA_REQ_UART2_RX,
+};
+
+static const struct imxuart_platform_data ar6mx_uart1_rev03_data = {
+	.flags = IMXUART_USE_DCEDTE | IMXUART_SDMA,
+	.dma_req_tx = MX6Q_DMA_REQ_UART2_TX,
+	.dma_req_rx = MX6Q_DMA_REQ_UART2_RX,
+};
+
 static inline void mx6q_sabreauto_init_uart(void)
 {
-	imx6q_add_imx_uart(0, NULL);  //+oliver
-	imx6q_add_imx_uart(1, NULL);
+	imx6q_add_imx_uart(0, NULL);
+	if (0xF == board_id) {
+		if (cpu_is_mx6q())
+			mxc_iomux_v3_setup_multiple_pads(mx6q_ar6mx_uart2_rev03_pads, \
+				ARRAY_SIZE(mx6q_ar6mx_uart2_rev03_pads));
+		else
+			mxc_iomux_v3_setup_multiple_pads(mx6dl_ar6mx_uart2_rev03_pads, \
+				ARRAY_SIZE(mx6dl_ar6mx_uart2_rev03_pads));
+
+		imx6q_add_imx_uart(1, &ar6mx_uart1_rev03_data);
+	} else {
+		imx6q_add_imx_uart(1, &ar6mx_uart1_data);
+	}
 	imx6q_add_imx_uart(2, NULL);
 	imx6q_add_imx_uart(3, NULL);
 }
@@ -431,14 +441,14 @@ static inline void imx6q_sabreauto_init_ldb(void)
 	gpio_direction_output(SABRESD_BL0_PWR, 1);
 	gpio_request(SABRESD_BL0_EN, "bl0_en");
 	gpio_direction_output(SABRESD_BL0_EN, 1);
-	#if 0
+	if (cpu_is_mx6q()) {
 	gpio_request(SABRESD_LVDS1_PWR, "lvds1");
 	gpio_direction_output(SABRESD_LVDS1_PWR, 1);
 	gpio_request(SABRESD_BL1_PWR, "bl1_prw");
 	gpio_direction_output(SABRESD_BL1_PWR, 1);
 	gpio_request(SABRESD_BL1_EN, "bl1_en");
 	gpio_direction_output(SABRESD_BL1_EN, 1);
-	#endif
+	}
 }
 //oliver}+
 
@@ -1269,6 +1279,13 @@ static struct mipi_csi2_platform_data mipi_csi2_pdata = {
 };
 #endif  //+oliver
 
+static struct gpio mx6q_ar6mx_ver_gpios[] = {
+	{ AR6MX_VER_B0, GPIOF_DIR_IN, "ver-b0" },
+	{ AR6MX_VER_B1, GPIOF_DIR_IN, "ver-b1" },
+	{ AR6MX_VER_B2, GPIOF_DIR_IN, "ver-b2" },
+	{ AR6MX_VER_B3, GPIOF_DIR_IN, "ver-b3" },
+};
+
 static void sabreauto_suspend_enter(void)
 {
 	/* suspend preparation */
@@ -1670,6 +1687,19 @@ static __init void ar6mx_init_external_gpios(void) {
 	gpio_export(AR6MX_TTL_DO1, true);
 }
 
+static void board_rev(void)
+{
+	int ret;
+
+	ret = gpio_request_array(mx6q_ar6mx_ver_gpios,
+		ARRAY_SIZE(mx6q_ar6mx_ver_gpios));
+	if (ret)
+		pr_err("failed to request ver gpios: %d\n", ret);
+	else
+		board_id = gpio_get_value(AR6MX_VER_B3) << 3 | \
+		gpio_get_value(AR6MX_VER_B2) << 2 | \
+		gpio_get_value(AR6MX_VER_B1) << 1 |	gpio_get_value(AR6MX_VER_B0);
+}
 /*!
  * Board specific initialization.
  */
@@ -1842,6 +1872,7 @@ static void __init mx6_board_init(void)
 	gp_reg_id = sabreauto_dvfscore_data.reg_id;
 	soc_reg_id = sabreauto_dvfscore_data.soc_id;
 	pu_reg_id = sabreauto_dvfscore_data.pu_id;
+	board_rev();
 	mx6q_sabreauto_init_uart();
 	#if 0   //+oliver
 	imx6q_add_mipi_csi2(&mipi_csi2_pdata);
@@ -1915,10 +1946,7 @@ static void __init mx6_board_init(void)
 	imx6q_add_ecspi(2, &mx6q_sabreauto_spi_data);
 		if (spinor_en)
 			spi_device_init();
-		else if (weimnor_en) {
-			mx6q_setup_weimcs();
-			platform_device_register(&physmap_flash_device);
-		}
+
 	imx6q_add_mxc_hdmi(&hdmi_data);
 
 	imx6q_add_anatop_thermal_imx(1, &mx6q_sabreauto_anatop_thermal_data);
@@ -1928,13 +1956,9 @@ static void __init mx6_board_init(void)
 
 	imx6q_add_pm_imx(0, &mx6q_sabreauto_pm_data);
 
-  #if 0 //+oliver
+	if (emmc_en)
+		imx6q_add_sdhci_usdhc_imx(3, &mx6q_sabreauto_sd4_data);
 	imx6q_add_sdhci_usdhc_imx(2, &mx6q_sabreauto_sd3_data);
-	imx6q_add_sdhci_usdhc_imx(0, &mx6q_sabreauto_sd1_data);
-	#endif  //+oliver
-	imx6q_add_sdhci_usdhc_imx(2, &mx6q_sabreauto_sd3_data);
-	//imx6q_add_sdhci_usdhc_imx(3, &mx6q_sabreauto_sd4_data);
-	//imx6q_add_sdhci_usdhc_imx(2, &mx6q_sabreauto_sd3_data);
 
 	imx_add_viv_gpu(&imx6_gpu_data, &imx6q_gpu_pdata);
 	imx6q_sabreauto_init_usb();

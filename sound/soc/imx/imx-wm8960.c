@@ -100,7 +100,8 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 	unsigned int sample_rate = 44100;
 	int ret = 0;
 	u32 dai_format;
-	unsigned int pll_out;
+	int dacdiv;
+	unsigned sysclk;
 
 	dai_format = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
 		SND_SOC_DAIFMT_CBM_CFM;
@@ -127,44 +128,85 @@ static int imx_hifi_hw_params(struct snd_pcm_substream *substream,
 	sample_rate = params_rate(params);
 	sample_format = params_format(params);
 
-	if (sample_format == SNDRV_PCM_FORMAT_S24_LE)
-		pll_out = sample_rate * 192;
-	else
-		pll_out = sample_rate * 256;
+	ret = snd_soc_dai_set_clkdiv(rtd->codec_dai, WM8960_SYSCLKDIV, WM8960_SYSCLK_DIV_2);
+	if(ret < 0){
+		pr_err("-%s(): Codec SYSCLKDIV setting error\n", __FUNCTION__);
+		return ret;
+	}
 
-	ret = snd_soc_dai_set_pll(codec_dai, 0,
-				  0, priv->sysclk,
-				  pll_out);
-	if (ret < 0)
-		pr_err("Failed to start PLL: %d\n", ret);
+	switch ( sample_rate ) {
+	case 44100:
+		dacdiv = WM8960_DAC_DIV_1;
+		sysclk = 11289600;
+		break;
+	case 48000:
+		dacdiv = WM8960_DAC_DIV_1;
+		sysclk = 12288000;
+		break;
+	default:
+		pr_err("-%s(): SND RATE ERROR (%d)\n", __FUNCTION__, sample_rate);
+		return -EINVAL;
+	}
 
-	return 0;
+	ret = snd_soc_dai_set_clkdiv(codec_dai, WM8960_DACDIV, dacdiv);
+	if(ret < 0){
+		pr_err("-%s(): Codec DACDIV setting error, %d\n", __FUNCTION__, ret );
+		return ret;
+	}
+
+	ret = snd_soc_dai_set_pll(codec_dai, 0, 0, priv->sysclk, sysclk * 2);
+	if( ret < 0 ){
+		pr_err("-%s(): Codec SYSCLK setting error, %d\n", __FUNCTION__, ret);
+		return ret;
+	}
+
+	pr_debug(" *** sample_rate = %d, bclk = %d, sysclk = %d\n", sample_rate, priv->sysclk, sysclk);
+
+	return ret;
 }
 
 /* imx card dapm widgets */
 static const struct snd_soc_dapm_widget imx_dapm_widgets[] = {
+	SND_SOC_DAPM_SPK("Speaker_R", NULL),
+	SND_SOC_DAPM_SPK("Speaker_L", NULL),
 	SND_SOC_DAPM_HP("Headphone Jack", NULL),
-	SND_SOC_DAPM_MIC("MIC", NULL),
+#if 0
+	SND_SOC_DAPM_MIC("MIC Jack", NULL),
+#endif
 };
 
 /* imx machine connections to the codec pins */
 static const struct snd_soc_dapm_route audio_map[] = {
+	{ "Speaker_R", NULL, "SPK_RP" },
+	{ "Speaker_R", NULL, "SPK_RN" },
+
+	{ "Speaker_L", NULL, "SPK_LP" },
+	{ "Speaker_L", NULL, "SPK_LN" },
 	{ "Headphone Jack", NULL, "HP_L" },
 	{ "Headphone Jack", NULL, "HP_R" },
 
+#if 0
 	{ "LINPUT1", NULL, "MICB" },
-	{ "MICB", NULL, "MIC" },
+	{ "MICB", NULL, "MIC Jack" },
+#endif
 };
 
 static int imx_wm8960_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
-	struct imx_priv *priv = &card_priv;
-	struct platform_device *pdev = priv->pdev;
-	struct mxc_audio_platform_data *plat = pdev->dev.platform_data;
 	int ret = 0;
 
-	gcodec = rtd->codec;
+  snd_soc_dapm_nc_pin(&codec->dapm, "LINPUT1");
+  snd_soc_dapm_nc_pin(&codec->dapm, "RINPUT1");
+  snd_soc_dapm_nc_pin(&codec->dapm, "LINPUT2");
+  snd_soc_dapm_nc_pin(&codec->dapm, "RINPUT2");
+  snd_soc_dapm_nc_pin(&codec->dapm, "LINPUT3");
+  snd_soc_dapm_nc_pin(&codec->dapm, "RINPUT3");
+#if 0
+  snd_soc_dapm_nc_pin(&codec->dapm, "HP_L");
+  snd_soc_dapm_nc_pin(&codec->dapm, "HP_R");
+#endif
+  snd_soc_dapm_nc_pin(&codec->dapm, "OUT3");
 
 	/* Add imx specific widgets */
 	snd_soc_dapm_new_controls(&codec->dapm, imx_dapm_widgets,
@@ -172,9 +214,15 @@ static int imx_wm8960_init(struct snd_soc_pcm_runtime *rtd)
 
 	/* Set up imx specific audio path audio_map */
 	snd_soc_dapm_add_routes(&codec->dapm, audio_map, ARRAY_SIZE(audio_map));
-
+#if 0
+	snd_soc_dapm_enable_pin(&codec->dapm, "Speaker_L");
+#endif
+  snd_soc_dapm_enable_pin(&codec->dapm, "Speaker_R");
+  snd_soc_dapm_disable_pin(&codec->dapm, "Speaker_L");
 	snd_soc_dapm_enable_pin(&codec->dapm, "Headphone Jack");
+#if 0
 	snd_soc_dapm_enable_pin(&codec->dapm, "MIC");
+#endif
 
 	snd_soc_dapm_sync(&codec->dapm);
 
@@ -182,8 +230,10 @@ static int imx_wm8960_init(struct snd_soc_pcm_runtime *rtd)
 }
 
 static struct snd_soc_ops imx_hifi_ops = {
+#if 0
 	.startup = imx_hifi_startup,
 	.shutdown = imx_hifi_shutdown,
+#endif
 	.hw_params = imx_hifi_hw_params,
 };
 

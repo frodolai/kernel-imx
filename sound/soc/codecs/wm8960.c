@@ -762,7 +762,13 @@ static int pll_factors(unsigned int source, unsigned int target,
 	/* Move down to proper range now rounding is done */
 	K /= 10;
 
-	pll_div->k = K;
+	/* To meet spec., assign K value precisely. */
+	if ((target/4) == 11289600*2)
+		pll_div->k = 0x86C226;
+	else if ((target/4) == 12288000*2)
+		pll_div->k = 0x3126E8;
+	else
+		pll_div->k = K;
 
 	pr_debug("WM8960 PLL: N=%x K=%x pre_div=%d\n",
 		 pll_div->n, pll_div->k, pll_div->pre_div);
@@ -801,9 +807,9 @@ static int wm8960_set_dai_pll(struct snd_soc_dai *codec_dai, int pll_id,
 	if (pll_div.k) {
 		reg |= 0x20;
 
-		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 18) & 0x3f);
-		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 9) & 0x1ff);
-		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0x1ff);
+		snd_soc_write(codec, WM8960_PLL2, (pll_div.k >> 16) & 0xff);
+		snd_soc_write(codec, WM8960_PLL3, (pll_div.k >> 8) & 0xff);
+		snd_soc_write(codec, WM8960_PLL4, pll_div.k & 0xff);
 	}
 	snd_soc_write(codec, WM8960_PLL1, reg);
 
@@ -975,18 +981,10 @@ static int wm8960_probe(struct snd_soc_codec *codec)
 	reg = snd_soc_read(codec, WM8960_ROUT2);
 	snd_soc_write(codec, WM8960_ROUT2, reg | 0x100);
 
-	snd_soc_write(codec, WM8960_PLL1,
-	snd_soc_read(codec, WM8960_PLL1) | 0x37);
-	snd_soc_write(codec, WM8960_PLL2, 0x31);
-	snd_soc_write(codec, WM8960_PLL3, 0x26);
-	snd_soc_write(codec, WM8960_PLL4, 0xe8);
-	snd_soc_write(codec, WM8960_POWER2,
-	snd_soc_read(codec, WM8960_POWER2) | 0x1);
-	msleep(250);
-	snd_soc_write(codec, WM8960_CLOCK1,
-	snd_soc_read(codec, WM8960_CLOCK1) | 0x5);
-
-	/* Since AR6MX uses 4 wire AUDMUX, ADCLRC will be disabled. */
+	/*
+		According to WM8960 datasheet page 48, Figure 25,
+		since AR6MX uses 4 wire AUDMUX, ADCLRC will be GPIO1.
+	 */
 	reg = snd_soc_read(codec, WM8960_IFACE2);
 	snd_soc_write(codec, WM8960_IFACE2, reg | 0x040);
 	reg = snd_soc_read(codec, WM8960_ADDCTL2);

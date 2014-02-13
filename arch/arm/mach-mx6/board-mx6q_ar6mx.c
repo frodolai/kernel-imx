@@ -629,8 +629,8 @@ static struct fsl_mxc_lcd_platform_data lcdif_data = {
 };
 
 static struct fsl_mxc_ldb_platform_data ldb_data = {
-	.ipu_id		= 0,
-	.disp_id	= 1,
+	.ipu_id		= 1,
+	.disp_id	= 0,
 	.ext_ref	= 1,
 	.mode		= LDB_SEP0,
 	.sec_ipu_id	= 1,
@@ -903,6 +903,13 @@ static void __init mx6_board_init(void)
 	pu_reg_id = ar6mx_dvfscore_data.pu_id;
 	board_rev();
 	mx6q_ar6mx_init_uart();
+	if (cpu_is_mx6dl()) {
+		ldb_data.ipu_id = 0;
+		ldb_data.disp_id = 0;
+		ldb_data.sec_ipu_id = 0;
+		ldb_data.sec_disp_id = 1;
+		hdmi_core_data.disp_id = 1;
+	}
 	imx6q_add_mxc_hdmi_core(&hdmi_core_data);
 
 	imx6q_add_ipuv3(0, &ipu_data[0]);

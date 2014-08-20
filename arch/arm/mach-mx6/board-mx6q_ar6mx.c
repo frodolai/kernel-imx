@@ -917,10 +917,7 @@ static void __init mx6_board_init(void)
 	mx6q_ar6mx_init_uart();
 	if (cpu_is_mx6dl()) {
 		ldb_data.ipu_id = 0;
-		ldb_data.disp_id = 0;
 		ldb_data.sec_ipu_id = 0;
-		ldb_data.sec_disp_id = 1;
-		hdmi_core_data.disp_id = 1;
 	}
 	imx6q_add_mxc_hdmi_core(&hdmi_core_data);
 

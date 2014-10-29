@@ -84,6 +84,9 @@ static iomux_v3_cfg_t mx6q_ar6mxcs_pads[] = {
   MX6Q_PAD_GPIO_3__I2C3_SCL,
   MX6Q_PAD_GPIO_6__I2C3_SDA,
 
+  /* PWM4 */
+  MX6Q_PAD_SD1_CMD__PWM4_PWMO,
+
   /* WDOG 2 */
   MX6Q_PAD_SD1_DAT3__WDOG2_WDOG_RST_B_DEB,
 

@@ -403,5 +403,11 @@ config SH_IRDA
 	help
 	  Say Y here if your want to enable SuperH IrDA devices.
 
+config IM300B_IRDA
+	tristate "IrDA driver for iM300B"
+	depends on IRDA
+	help
+	  Say Y here if your want to enable IrDA devices on iM300B.
+
 endmenu
 

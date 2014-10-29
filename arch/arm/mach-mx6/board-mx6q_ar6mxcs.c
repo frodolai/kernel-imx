@@ -484,6 +484,14 @@ static const struct imx_pcie_platform_data mx6_ar6mxcs_pcie_data __initconst = {
 	.pcie_dis	= AR6MXCS_PCIE_DIS_B,
 };
 
+/* Backlight PWM for LVDS0 */
+static struct platform_pwm_backlight_data ar6mxcs_pwm_backlight_data4 = {
+	.pwm_id			= 3,
+	.max_brightness		= 255,
+	.dft_brightness		= 255,
+	.pwm_period_ns		= 500000,
+};
+
 /*!
  * Board specific initialization.
  */
@@ -578,6 +586,9 @@ static void __init mx6_ar6mxcs_board_init(void)
 	imx6q_add_mxc_pwm(2);
 	imx6q_add_mxc_pwm(3);
 #endif
+
+	imx6q_add_mxc_pwm(3);
+	imx6q_add_mxc_pwm_backlight(3, &ar6mxcs_pwm_backlight_data4);
 
 	imx6q_add_otp();
 	imx6q_add_viim();

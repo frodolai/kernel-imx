@@ -363,11 +363,11 @@ static struct fsl_mxc_hdmi_core_platform_data hdmi_core_data = {
 
 static struct fsl_mxc_ldb_platform_data ldb_data = {
 	.ipu_id = 0,
-	.disp_id = 1,
+	.disp_id = 0,
 	.ext_ref = 1,
 	.mode = LDB_SEP0,
 	.sec_ipu_id = 1,
-	.sec_disp_id = 0,
+	.sec_disp_id = 1,
 };
 
 static struct imx_ipuv3_platform_data ipu_data[] = {
@@ -489,7 +489,7 @@ static struct platform_pwm_backlight_data ar6mxcs_pwm_backlight_data4 = {
 	.pwm_id			= 3,
 	.max_brightness		= 255,
 	.dft_brightness		= 255,
-	.pwm_period_ns		= 500000,
+	.pwm_period_ns		= 5000000,
 };
 
 /*!

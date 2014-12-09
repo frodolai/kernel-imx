@@ -80,6 +80,7 @@
 #include "board-mx6solo_ar6mxcs.h"
 
 #define AR6MXCS_SW_RST        IMX_GPIO_NR(1, 0)
+#define AR6MXCS_CAP_TCH_INT0  IMX_GPIO_NR(2, 0)
 #define AR6MXCS_RTC_INT       IMX_GPIO_NR(6, 7)
 #define AR6MXCS_SPK_DET	      IMX_GPIO_NR(1, 20)
 #define AR6MXCS_MIC_DET	      IMX_GPIO_NR(1, 16)
@@ -250,6 +251,10 @@ static struct i2c_board_info mxc_i2c2_board_info[] __initdata = {
 	{
 		I2C_BOARD_INFO("s35390a", 0x30),
 		.irq  = gpio_to_irq(AR6MXCS_RTC_INT),
+	},
+	{
+		I2C_BOARD_INFO("NuTouch", 0x55),
+		.irq  = gpio_to_irq(AR6MXCS_CAP_TCH_INT0),
 	},
 };
 

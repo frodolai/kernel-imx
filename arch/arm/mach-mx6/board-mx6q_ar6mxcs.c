@@ -102,6 +102,7 @@ extern char *pu_reg_id;
 
 static const struct esdhc_platform_data mx6q_ar6mxcs_sd3_data __initconst = {
 	.cd_gpio = AR6MXCS_SD3_CD,
+	.wp_gpio = -EINVAL,
 	//.wp_gpio = AR6MXCS_SD3_WP,
 	.keep_power_at_suspend = 1,
 	.support_8bit = 0,
@@ -111,6 +112,7 @@ static const struct esdhc_platform_data mx6q_ar6mxcs_sd3_data __initconst = {
 
 static const struct esdhc_platform_data mx6q_ar6mxcs_sd4_data __initconst = {
 	.always_present = 1,
+	.wp_gpio = -EINVAL,
 	.keep_power_at_suspend = 1,
 	.support_8bit = 1,
 	.delay_line = 0,

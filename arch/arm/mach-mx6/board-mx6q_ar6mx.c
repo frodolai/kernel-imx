@@ -666,6 +666,30 @@ static struct gpio mx6q_ar6mx_ver_gpios[] = {
 	{ AR6MX_VER_B3, GPIOF_DIR_IN, "ver-b3" },
 };
 
+/* PWM1 Backlight PWM for LVDS0 */
+static struct platform_pwm_backlight_data ar6mx_pwm_backlight_data1 = {
+	.pwm_id			= 0,
+	.max_brightness		= 255,
+	.dft_brightness		= 255,
+	.pwm_period_ns		= 1000000,
+};
+
+/* PWM2 Backlight PWM for LVDS1 */
+static struct platform_pwm_backlight_data ar6mx_pwm_backlight_data2 = {
+	.pwm_id			= 1,
+	.max_brightness		= 255,
+	.dft_brightness		= 255,
+	.pwm_period_ns		= 50000,
+};
+
+/* PWM3 for MIPI DSI */
+static struct platform_pwm_backlight_data ar6mx_pwm_backlight_data3 = {
+	.pwm_id			= 2,
+	.max_brightness		= 255,
+	.dft_brightness		= 255,
+	.pwm_period_ns		= 50000,
+};
+
 static void ar6mx_suspend_enter(void)
 {
 	/* suspend preparation */
@@ -989,8 +1013,14 @@ static void __init mx6_board_init(void)
 
 	imx6q_add_dvfs_core(&ar6mx_dvfscore_data);
 
+	imx6q_add_mxc_pwm(0);
+	imx6q_add_mxc_pwm(1);
 	imx6q_add_mxc_pwm(2);
 	imx6q_add_mxc_pwm(3);
+
+	imx6q_add_mxc_pwm_backlight(0, &ar6mx_pwm_backlight_data1);
+	imx6q_add_mxc_pwm_backlight(1, &ar6mx_pwm_backlight_data2);
+	imx6q_add_mxc_pwm_backlight(2, &ar6mx_pwm_backlight_data3);
 
 	imx6q_add_hdmi_soc();
 	imx6q_add_hdmi_soc_dai();
